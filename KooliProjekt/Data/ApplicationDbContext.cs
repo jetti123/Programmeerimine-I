@@ -9,5 +9,12 @@ namespace KooliProjekt.Data
             : base(options)
         {
         }
+
+        public DbSet<AssetClass> AssetClasses { get; set; }
+        public DbSet<Asset> Assets { get; set; }
+        public DbSet<MonthlyData> MonthlyData { get; set; }
+        public DbSet<CashFlow> CashFlows { get; set; }
+
+
     }
 }
