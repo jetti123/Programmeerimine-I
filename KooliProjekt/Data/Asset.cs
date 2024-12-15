@@ -12,6 +12,7 @@ namespace KooliProjekt.Data
         public string Name { get; set; }
 
         [ForeignKey("AssetClass")]
+        [Display(Name = "Asset Class")]
         public int AssetClassId { get; set; }
         public AssetClass AssetClass { get; set; }
     }
