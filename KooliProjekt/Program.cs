@@ -47,6 +47,17 @@ namespace KooliProjekt
                 pattern: "{controller=Home}/{action=Index}/{id?}");
             app.MapRazorPages();
 
+            // Andmebaasi loomine ja SeedData käivitamine (ainult arenduskeskkonnas)
+            if (app.Environment.IsDevelopment())
+            {
+                using (var scope = app.Services.CreateScope())
+                {
+                    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    context.Database.EnsureCreated(); // Loob andmebaasi, kui seda pole
+                    SeedData.Generate(context);       // Lisab algandmed
+                }
+            }
+
             app.Run();
         }
     }
