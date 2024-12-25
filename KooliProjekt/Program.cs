@@ -1,6 +1,9 @@
 using KooliProjekt.Data;
+using KooliProjekt.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+
+
 
 namespace KooliProjekt
 {
@@ -19,6 +22,12 @@ namespace KooliProjekt
             builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
                 .AddEntityFrameworkStores<ApplicationDbContext>();
             builder.Services.AddControllersWithViews();
+
+            // Lisame teenused (registreerime kõik Service-klassid)
+            builder.Services.AddScoped<IAssetClassService, AssetClassService>();
+            builder.Services.AddScoped<ICashFlowService, CashFlowService>();
+            builder.Services.AddScoped<IAssetService, AssetService>();
+            builder.Services.AddScoped<IMonthlyDataService, MonthlyDataService>();
 
             var app = builder.Build();
 

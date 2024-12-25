@@ -3,25 +3,25 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using KooliProjekt.Data;
+using KooliProjekt.Services;
 
 namespace KooliProjekt.Controllers
 {
     public class AssetClassesController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IAssetClassService _assetClassService;
 
-        public AssetClassesController(ApplicationDbContext context)
+        public AssetClassesController(IAssetClassService assetClassService)
         {
-            _context = context;
+            _assetClassService = assetClassService;
         }
 
         // GET: AssetClasses
         public async Task<IActionResult> Index()
         {
-            return View(await _context.AssetClasses.ToListAsync());
+            var assetClasses = await _assetClassService.GetAllAsync();
+            return View(assetClasses);
         }
 
         // GET: AssetClasses/Details/5
@@ -32,8 +32,7 @@ namespace KooliProjekt.Controllers
                 return NotFound();
             }
 
-            var assetClass = await _context.AssetClasses
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var assetClass = await _assetClassService.GetByIdAsync(id.Value);
             if (assetClass == null)
             {
                 return NotFound();
@@ -49,16 +48,13 @@ namespace KooliProjekt.Controllers
         }
 
         // POST: AssetClasses/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Name")] AssetClass assetClass)
         {
             if (ModelState.IsValid)
             {
-                _context.Add(assetClass);
-                await _context.SaveChangesAsync();
+                await _assetClassService.AddAsync(assetClass);
                 return RedirectToAction(nameof(Index));
             }
             return View(assetClass);
@@ -72,7 +68,7 @@ namespace KooliProjekt.Controllers
                 return NotFound();
             }
 
-            var assetClass = await _context.AssetClasses.FindAsync(id);
+            var assetClass = await _assetClassService.GetByIdAsync(id.Value);
             if (assetClass == null)
             {
                 return NotFound();
@@ -81,8 +77,6 @@ namespace KooliProjekt.Controllers
         }
 
         // POST: AssetClasses/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name")] AssetClass assetClass)
@@ -96,21 +90,14 @@ namespace KooliProjekt.Controllers
             {
                 try
                 {
-                    _context.Update(assetClass);
-                    await _context.SaveChangesAsync();
+                    await _assetClassService.UpdateAsync(assetClass);
+                    return RedirectToAction(nameof(Index));
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (Exception ex)
                 {
-                    if (!AssetClassExists(assetClass.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    // Log or handle exception
+                    return BadRequest();
                 }
-                return RedirectToAction(nameof(Index));
             }
             return View(assetClass);
         }
@@ -123,8 +110,7 @@ namespace KooliProjekt.Controllers
                 return NotFound();
             }
 
-            var assetClass = await _context.AssetClasses
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var assetClass = await _assetClassService.GetByIdAsync(id.Value);
             if (assetClass == null)
             {
                 return NotFound();
@@ -138,19 +124,9 @@ namespace KooliProjekt.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var assetClass = await _context.AssetClasses.FindAsync(id);
-            if (assetClass != null)
-            {
-                _context.AssetClasses.Remove(assetClass);
-            }
-
-            await _context.SaveChangesAsync();
+            await _assetClassService.DeleteAsync(id);
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool AssetClassExists(int id)
-        {
-            return _context.AssetClasses.Any(e => e.Id == id);
         }
     }
 }
+

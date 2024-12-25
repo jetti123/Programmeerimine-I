@@ -1,28 +1,28 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using KooliProjekt.Data;
+using KooliProjekt.Services;
 
 namespace KooliProjekt.Controllers
 {
     public class MonthlyDatasController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IMonthlyDataService _monthlyDataService;
+        private readonly IAssetService _assetService;
 
-        public MonthlyDatasController(ApplicationDbContext context)
+        public MonthlyDatasController(IMonthlyDataService monthlyDataService, IAssetService assetService)
         {
-            _context = context;
+            _monthlyDataService = monthlyDataService;
+            _assetService = assetService;
         }
 
         // GET: MonthlyDatas
         public async Task<IActionResult> Index()
         {
-            var applicationDbContext = _context.MonthlyData.Include(m => m.Asset);
-            return View(await applicationDbContext.ToListAsync());
+            var monthlyData = await _monthlyDataService.GetAllWithAssetAsync();
+            return View(monthlyData);
         }
 
         // GET: MonthlyDatas/Details/5
@@ -33,9 +33,7 @@ namespace KooliProjekt.Controllers
                 return NotFound();
             }
 
-            var monthlyData = await _context.MonthlyData
-                .Include(m => m.Asset)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var monthlyData = await _monthlyDataService.GetByIdWithAssetAsync(id.Value);
             if (monthlyData == null)
             {
                 return NotFound();
@@ -45,26 +43,26 @@ namespace KooliProjekt.Controllers
         }
 
         // GET: MonthlyDatas/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["AssetId"] = new SelectList(_context.Assets, "Id", "Name");
+            var assets = await _assetService.GetAllAsync();
+            ViewData["AssetId"] = new SelectList(assets, "Id", "Name");
             return View();
         }
 
         // POST: MonthlyDatas/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,AssetId,Date,Quantity,Value")] MonthlyData monthlyData)
         {
             if (ModelState.IsValid)
             {
-                _context.Add(monthlyData);
-                await _context.SaveChangesAsync();
+                await _monthlyDataService.AddAsync(monthlyData);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["AssetId"] = new SelectList(_context.Assets, "Id", "Name", monthlyData.AssetId);
+
+            var assets = await _assetService.GetAllAsync();
+            ViewData["AssetId"] = new SelectList(assets, "Id", "Name", monthlyData.AssetId);
             return View(monthlyData);
         }
 
@@ -76,18 +74,18 @@ namespace KooliProjekt.Controllers
                 return NotFound();
             }
 
-            var monthlyData = await _context.MonthlyData.FindAsync(id);
+            var monthlyData = await _monthlyDataService.GetByIdAsync(id.Value);
             if (monthlyData == null)
             {
                 return NotFound();
             }
-            ViewData["AssetId"] = new SelectList(_context.Assets, "Id", "Name", monthlyData.AssetId);
+
+            var assets = await _assetService.GetAllAsync();
+            ViewData["AssetId"] = new SelectList(assets, "Id", "Name", monthlyData.AssetId);
             return View(monthlyData);
         }
 
         // POST: MonthlyDatas/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,AssetId,Date,Quantity,Value")] MonthlyData monthlyData)
@@ -101,23 +99,18 @@ namespace KooliProjekt.Controllers
             {
                 try
                 {
-                    _context.Update(monthlyData);
-                    await _context.SaveChangesAsync();
+                    await _monthlyDataService.UpdateAsync(monthlyData);
+                    return RedirectToAction(nameof(Index));
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (Exception ex)
                 {
-                    if (!MonthlyDataExists(monthlyData.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    // Log or handle exception
+                    return BadRequest();
                 }
-                return RedirectToAction(nameof(Index));
             }
-            ViewData["AssetId"] = new SelectList(_context.Assets, "Id", "Name", monthlyData.AssetId);
+
+            var assets = await _assetService.GetAllAsync();
+            ViewData["AssetId"] = new SelectList(assets, "Id", "Name", monthlyData.AssetId);
             return View(monthlyData);
         }
 
@@ -129,9 +122,7 @@ namespace KooliProjekt.Controllers
                 return NotFound();
             }
 
-            var monthlyData = await _context.MonthlyData
-                .Include(m => m.Asset)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var monthlyData = await _monthlyDataService.GetByIdWithAssetAsync(id.Value);
             if (monthlyData == null)
             {
                 return NotFound();
@@ -145,19 +136,9 @@ namespace KooliProjekt.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var monthlyData = await _context.MonthlyData.FindAsync(id);
-            if (monthlyData != null)
-            {
-                _context.MonthlyData.Remove(monthlyData);
-            }
-
-            await _context.SaveChangesAsync();
+            await _monthlyDataService.DeleteAsync(id);
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool MonthlyDataExists(int id)
-        {
-            return _context.MonthlyData.Any(e => e.Id == id);
         }
     }
 }
+

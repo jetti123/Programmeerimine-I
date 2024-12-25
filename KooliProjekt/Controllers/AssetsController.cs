@@ -4,25 +4,27 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using KooliProjekt.Data;
+using KooliProjekt.Services;
 
 namespace KooliProjekt.Controllers
 {
     public class AssetsController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IAssetService _assetService;
+        private readonly IAssetClassService _assetClassService;
 
-        public AssetsController(ApplicationDbContext context)
+        public AssetsController(IAssetService assetService, IAssetClassService assetClassService)
         {
-            _context = context;
+            _assetService = assetService;
+            _assetClassService = assetClassService;
         }
 
         // GET: Assets
         public async Task<IActionResult> Index()
         {
-            var applicationDbContext = _context.Assets.Include(a => a.AssetClass);
-            return View(await applicationDbContext.ToListAsync());
+            var assets = await _assetService.GetAllWithAssetClassAsync();
+            return View(assets);
         }
 
         // GET: Assets/Details/5
@@ -33,9 +35,7 @@ namespace KooliProjekt.Controllers
                 return NotFound();
             }
 
-            var asset = await _context.Assets
-                .Include(a => a.AssetClass)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var asset = await _assetService.GetByIdWithAssetClassAsync(id.Value);
             if (asset == null)
             {
                 return NotFound();
@@ -45,26 +45,26 @@ namespace KooliProjekt.Controllers
         }
 
         // GET: Assets/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["AssetClassId"] = new SelectList(_context.AssetClasses, "Id", "Name");
+            var assetClasses = await _assetClassService.GetAllAsync();
+            ViewData["AssetClassId"] = new SelectList(assetClasses, "Id", "Name");
             return View();
         }
 
         // POST: Assets/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Name,AssetClassId")] Asset asset)
         {
             if (ModelState.IsValid)
             {
-                _context.Add(asset);
-                await _context.SaveChangesAsync();
+                await _assetService.AddAsync(asset);
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["AssetClassId"] = new SelectList(_context.AssetClasses, "Id", "Name", asset.AssetClassId);
+
+            var assetClasses = await _assetClassService.GetAllAsync();
+            ViewData["AssetClassId"] = new SelectList(assetClasses, "Id", "Name", asset.AssetClassId);
             return View(asset);
         }
 
@@ -76,18 +76,18 @@ namespace KooliProjekt.Controllers
                 return NotFound();
             }
 
-            var asset = await _context.Assets.FindAsync(id);
+            var asset = await _assetService.GetByIdAsync(id.Value);
             if (asset == null)
             {
                 return NotFound();
             }
-            ViewData["AssetClassId"] = new SelectList(_context.AssetClasses, "Id", "Name", asset.AssetClassId);
+
+            var assetClasses = await _assetClassService.GetAllAsync();
+            ViewData["AssetClassId"] = new SelectList(assetClasses, "Id", "Name", asset.AssetClassId);
             return View(asset);
         }
 
         // POST: Assets/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name,AssetClassId")] Asset asset)
@@ -101,23 +101,18 @@ namespace KooliProjekt.Controllers
             {
                 try
                 {
-                    _context.Update(asset);
-                    await _context.SaveChangesAsync();
+                    await _assetService.UpdateAsync(asset);
+                    return RedirectToAction(nameof(Index));
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (Exception ex)
                 {
-                    if (!AssetExists(asset.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    // Log error if necessary
+                    return BadRequest();
                 }
-                return RedirectToAction(nameof(Index));
             }
-            ViewData["AssetClassId"] = new SelectList(_context.AssetClasses, "Id", "Name", asset.AssetClassId);
+
+            var assetClasses = await _assetClassService.GetAllAsync();
+            ViewData["AssetClassId"] = new SelectList(assetClasses, "Id", "Name", asset.AssetClassId);
             return View(asset);
         }
 
@@ -129,9 +124,7 @@ namespace KooliProjekt.Controllers
                 return NotFound();
             }
 
-            var asset = await _context.Assets
-                .Include(a => a.AssetClass)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var asset = await _assetService.GetByIdWithAssetClassAsync(id.Value);
             if (asset == null)
             {
                 return NotFound();
@@ -145,19 +138,9 @@ namespace KooliProjekt.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var asset = await _context.Assets.FindAsync(id);
-            if (asset != null)
-            {
-                _context.Assets.Remove(asset);
-            }
-
-            await _context.SaveChangesAsync();
+            await _assetService.DeleteAsync(id);
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool AssetExists(int id)
-        {
-            return _context.Assets.Any(e => e.Id == id);
         }
     }
 }
+

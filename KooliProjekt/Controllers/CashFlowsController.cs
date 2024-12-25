@@ -1,27 +1,25 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using KooliProjekt.Data;
+using KooliProjekt.Services;
 
 namespace KooliProjekt.Controllers
 {
     public class CashFlowsController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ICashFlowService _cashFlowService;
 
-        public CashFlowsController(ApplicationDbContext context)
+        public CashFlowsController(ICashFlowService cashFlowService)
         {
-            _context = context;
+            _cashFlowService = cashFlowService;
         }
 
         // GET: CashFlows
         public async Task<IActionResult> Index()
         {
-            return View(await _context.CashFlows.ToListAsync());
+            var cashFlows = await _cashFlowService.GetAllAsync();
+            return View(cashFlows);
         }
 
         // GET: CashFlows/Details/5
@@ -32,8 +30,7 @@ namespace KooliProjekt.Controllers
                 return NotFound();
             }
 
-            var cashFlow = await _context.CashFlows
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var cashFlow = await _cashFlowService.GetByIdAsync(id.Value);
             if (cashFlow == null)
             {
                 return NotFound();
@@ -49,16 +46,13 @@ namespace KooliProjekt.Controllers
         }
 
         // POST: CashFlows/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Date,Amount,Description")] CashFlow cashFlow)
         {
             if (ModelState.IsValid)
             {
-                _context.Add(cashFlow);
-                await _context.SaveChangesAsync();
+                await _cashFlowService.AddAsync(cashFlow);
                 return RedirectToAction(nameof(Index));
             }
             return View(cashFlow);
@@ -72,17 +66,16 @@ namespace KooliProjekt.Controllers
                 return NotFound();
             }
 
-            var cashFlow = await _context.CashFlows.FindAsync(id);
+            var cashFlow = await _cashFlowService.GetByIdAsync(id.Value);
             if (cashFlow == null)
             {
                 return NotFound();
             }
+
             return View(cashFlow);
         }
 
         // POST: CashFlows/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Date,Amount,Description")] CashFlow cashFlow)
@@ -96,21 +89,14 @@ namespace KooliProjekt.Controllers
             {
                 try
                 {
-                    _context.Update(cashFlow);
-                    await _context.SaveChangesAsync();
+                    await _cashFlowService.UpdateAsync(cashFlow);
+                    return RedirectToAction(nameof(Index));
                 }
-                catch (DbUpdateConcurrencyException)
+                catch (Exception ex)
                 {
-                    if (!CashFlowExists(cashFlow.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    // Log or handle exception
+                    return BadRequest();
                 }
-                return RedirectToAction(nameof(Index));
             }
             return View(cashFlow);
         }
@@ -123,8 +109,7 @@ namespace KooliProjekt.Controllers
                 return NotFound();
             }
 
-            var cashFlow = await _context.CashFlows
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var cashFlow = await _cashFlowService.GetByIdAsync(id.Value);
             if (cashFlow == null)
             {
                 return NotFound();
@@ -138,19 +123,9 @@ namespace KooliProjekt.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var cashFlow = await _context.CashFlows.FindAsync(id);
-            if (cashFlow != null)
-            {
-                _context.CashFlows.Remove(cashFlow);
-            }
-
-            await _context.SaveChangesAsync();
+            await _cashFlowService.DeleteAsync(id);
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool CashFlowExists(int id)
-        {
-            return _context.CashFlows.Any(e => e.Id == id);
         }
     }
 }
+
