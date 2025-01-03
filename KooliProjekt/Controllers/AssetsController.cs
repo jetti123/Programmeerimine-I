@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using KooliProjekt.Data;
 using KooliProjekt.Services;
+using KooliProjekt.Models;
+using KooliProjekt.Search;
 
 namespace KooliProjekt.Controllers
 {
@@ -21,10 +23,19 @@ namespace KooliProjekt.Controllers
         }
 
         // GET: Assets
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(AssetSearch search)
         {
-            var assets = await _assetService.GetAllWithAssetClassAsync();
-            return View(assets);
+            var assets = await _assetService.ListAsync(search);
+            var assetClasses = await _assetClassService.GetAllAsync();
+
+            var model = new AssetIndexModel
+            {
+                Assets = assets,
+                Search = search,
+                AssetClasses = assetClasses
+            };
+
+            return View(model);
         }
 
         // GET: Assets/Details/5

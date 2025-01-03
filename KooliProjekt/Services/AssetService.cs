@@ -1,4 +1,5 @@
 ﻿using KooliProjekt.Data;
+using KooliProjekt.Search;
 using Microsoft.EntityFrameworkCore;
 
 namespace KooliProjekt.Services
@@ -51,6 +52,24 @@ namespace KooliProjekt.Services
         public async Task<Asset?> GetByIdWithAssetClassAsync(int id)
         {
             return await _context.Assets.Include(a => a.AssetClass).FirstOrDefaultAsync(a => a.Id == id);
+        }
+        public async Task<List<Asset>> ListAsync(AssetSearch search)
+        {
+            var query = _context.Assets.AsQueryable();
+
+            // Otsing nime järgi
+            if (!string.IsNullOrWhiteSpace(search.SearchTerm))
+            {
+                query = query.Where(a => a.Name.Contains(search.SearchTerm.Trim()));
+            }
+
+            // Filtreerimine varaklassi järgi
+            if (search.AssetClassId.HasValue)
+            {
+                query = query.Where(a => a.AssetClassId == search.AssetClassId.Value);
+            }
+
+            return await query.Include(a => a.AssetClass).ToListAsync();
         }
 
     }

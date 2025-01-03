@@ -1,4 +1,5 @@
 ﻿using KooliProjekt.Data;
+using KooliProjekt.Search;
 
 namespace KooliProjekt.Services
 {
@@ -11,6 +12,8 @@ namespace KooliProjekt.Services
         Task DeleteAsync(int id);
         Task<List<Asset>> GetAllWithAssetClassAsync();
         Task<Asset?> GetByIdWithAssetClassAsync(int id);
+        Task<List<Asset>> ListAsync(AssetSearch search);
+
 
     }
 }

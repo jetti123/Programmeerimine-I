@@ -1,4 +1,5 @@
-﻿@model IEnumerable<KooliProjekt.Data.Asset>
+﻿@model KooliProjekt.Models.AssetIndexModel
+
 
 @{
     ViewData["Title"] = "Index";
@@ -9,20 +10,38 @@
 <p>
     <a asp-action="Create">Create New</a>
 </p>
+
+<form method="get">
+    <div class="form-group">
+        <label class="control-label">Search Term</label>
+        <input class="form-control" asp-for="Search.SearchTerm" placeholder="Search by name" />
+    </div>
+    <div class="form-group">
+        <label class="control-label">Asset Class</label>
+        <select class="form-control" asp-for="Search.AssetClassId" asp-items="@(new SelectList(Model.AssetClasses, "Id", "Name"))">
+            <option value="">-- All Classes --</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <button class="btn btn-primary" type="submit">Search</button>
+    </div>
+</form>
+
+
 <table class="table">
     <thead>
         <tr>
             <th>
-                @Html.DisplayNameFor(model => model.Name)
+                @Html.DisplayNameFor(model => model.Assets.First().Name)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.AssetClass)
+                @Html.DisplayNameFor(model => model.Assets.First().AssetClass.Name)
             </th>
             <th></th>
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
+@foreach (var item in Model.Assets) {
         <tr>
             <td>
                 @Html.DisplayFor(modelItem => item.Name)
